@@ -2,11 +2,10 @@ const { Router } = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const adminMiddleware = require("../middleware/admin");
-const { Admin } = require("../db/index");
+const { Admin, Course } = require("../db/index");
 
 const router = Router();
-const secretKey = "password";
-
+const { jwtSecret } = require("../config/config");
 // Admin Routes
 
 //Sign Up route which creates account and store in db
@@ -40,19 +39,36 @@ router.post("/signin", async (req, res) => {
       res.status(401).json({ error: "Invalid password or email" });
       return;
     }
-    const token = jwt.sign({ username: admin.username }, secretKey);
+    const token = jwt.sign({ username: admin.username }, jwtSecret);
     res.json({ token: token });
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+});
+
+router.post("/courses", adminMiddleware, async (req, res) => {
+  try {
+    const course = await Course.create({
+      title: req.body.title,
+      description: req.body.description,
+      imageLink: req.body.imageLink,
+      price: req.body.price,
+    });
+    console.log(course);
+    res.json({ msg: "Course created successfully", courseId: course._id });
   } catch (error) {
     res.sendStatus(500);
   }
 });
 
-router.post("/courses", adminMiddleware, (req, res) => {
-  // Implement course creation logic
-});
-
-router.get("/courses", adminMiddleware, (req, res) => {
-  // Implement fetching all courses logic
+router.get("/courses", adminMiddleware, async (req, res) => {
+  try {
+    const courses = await Course.find({});
+    res.json({ courses: courses });
+  } catch (error) {
+    res.sendStatus(500);
+  }
 });
 
 module.exports = router;
